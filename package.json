@@ -1,0 +1,39 @@
+{
+  "name": "qa-site-api",
+  "version": "1.0.0",
+  "description": "API for QA Web site",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start:build": "tsc -w",
+    "start:run": "nodemon build/index.js",
+    "start": "concurrently npm:start:*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VenkateshPothagani/QA-Site-API.git"
+  },
+  "author": "Venkatesh",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/VenkateshPothagani/QA-Site-API/issues"
+  },
+  "homepage": "https://github.com/VenkateshPothagani/QA-Site-API#readme",
+  "devDependencies": {
+    "@types/bcrypt": "^3.0.0",
+    "@types/body-parser": "^1.19.0",
+    "@types/express": "^4.17.6",
+    "@types/jsonwebtoken": "^8.5.0",
+    "@types/mongoose": "^5.7.29",
+    "concurrently": "^5.2.0",
+    "nodemon": "^2.0.4",
+    "typescript": "^3.9.5"
+  },
+  "dependencies": {
+    "bcrypt": "^5.0.0",
+    "body-parser": "^1.19.0",
+    "express": "^4.17.1",
+    "jsonwebtoken": "^8.5.1",
+    "mongoose": "^5.9.20"
+  }
+}
