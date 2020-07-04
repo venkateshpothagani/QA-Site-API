@@ -12,6 +12,5 @@
     - Added endpoints for questions, answers, comments
     - create, update, remove, get all, get one, upvote, downvote actions added
     - Some other minor changes
-        - Models are removed
         - Response messages with full data
         - Documentation added
