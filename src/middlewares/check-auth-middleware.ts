@@ -24,7 +24,7 @@ export const checkAuth = (
 					token,
 					'very_long_super_secret_key'
 				) as DecodedData;
-				req.body = { ...req.body, decodedData: { ...decodedData } };
+				req.body = { ...req.body,  ...decodedData };
 				next();
 			} else {
 				feedback(res, 401, 'Invalid Token');

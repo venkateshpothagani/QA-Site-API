@@ -24,3 +24,9 @@ routes.post('/update-password', checkAuth, user.updatePassword);
 
 // Update the user username when user is signin
 routes.post('/update-username', checkAuth, user.updateUsername);
+
+//  Update the user dob when user is authenticated
+routes.post('/update-dob', checkAuth, user.updateDOB);
+
+// Deletes the user when user is authenticated
+routes.delete('/remove', checkAuth, user.remove);

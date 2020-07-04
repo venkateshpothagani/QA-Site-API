@@ -1,67 +1,79 @@
-import express from 'express';
+import { Request, Response } from 'express';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import { User } from '../../schemas/auth/user.schema';
-import { UserModel } from '../../models/User.model';
-import mongoose from 'mongoose';
+import * as error from '../../utilities/response';
+import * as code from '../../utilities/status-code';
+import { calculateAge } from '../../utilities/age-calculator';
 
-interface UpdateOneResult {
-	nModified: number;
-	n: number;
-	ok: number;
-}
+const ENCRYPTION_ROUNDS: number = 10;
 
-// User signup
-export const signup = async (req: express.Request, res: express.Response) => {
-	if (!req.body.username || !req.body.password || !req.body.email) {
-		res.status(400).json({
-			message: 'Bad Request',
-			data: 'Failed to get data from request body.',
-		});
+/**
+ *
+ * @param req express.Request
+ * @param res express.Response
+ * @description To create a account for user
+ */
+export const signup = async (req: Request, res: Response) => {
+	const username = req.body.username;
+	const password = req.body.password;
+	const email = req.body.email;
+	const dob = req.body.dob; // MM-DD-YYYY
+	const age = calculateAge(dob);
+
+	if (!username || !password || !email || !dob) {
+		return error.badRequestError(res);
 	}
+
 	try {
 		// Creates hash value to password
-		const hash: string = await encrypt(req.body.password);
+		const hash: string = await bcrypt.hash(password, ENCRYPTION_ROUNDS);
 
-		const userData: UserModel = {
-			username: req.body.username,
-			email: req.body.email,
+		const userData = {
+			username: username,
+			email: email,
 			password: hash,
+			date: new Date(),
+			dob: dob,
+			age: { ...age },
 		};
 
-		// Create new instance to Model by user data to its contructor to database
 		const document = await new User(userData).save();
-		console.log(document);
-		res.status(201).json({
+
+		return res.status(code.CREATED).json({
 			message: 'Account Created',
 			data: {
-				username: document.toJSON().username,
-				email: document.toJSON().email,
+				...document.toJSON(),
+				password: '********',
 			},
 		});
-	} catch (error) {
-		res.status(500).json({
-			message: 'Internal Server Error',
-			data: error,
-		});
+	} catch (err) {
+		return error.internalServerError(res, err);
 	}
 };
 
-// User signin
-export const signin = async (req: express.Request, res: express.Response) => {
-	if (!req.body.username || !req.body.password) {
-		res.status(400).json({
-			message: 'Bad Request',
-			data: 'Failed to get data from request body.',
-		});
+/**
+ *
+ * @param req express.Request
+ * @param res express.Response
+ * @description Signin
+ */
+export const signin = async (req: Request, res: Response) => {
+	const username = req.body.username;
+	const password = req.body.password;
+
+	if (!username || !password) {
+		return error.badRequestError(res);
 	}
 	try {
-		const document = await User.findOne({ username: req.body.username });
+		const document = await User.findOne({ username: username });
+
 		if (document) {
 			const validUser: boolean = await bcrypt.compare(
-				req.body.password,
+				password,
 				document.toJSON().password
 			);
+
 			if (validUser) {
 				const token = jwt.sign(
 					{
@@ -75,209 +87,329 @@ export const signin = async (req: express.Request, res: express.Response) => {
 					}
 				);
 
-				res.status(200).json({
+				return res.status(code.OK).json({
 					message: 'User Logged in',
 					data: {
 						token: token,
 						username: document.toJSON().username,
+						userId: document.toJSON()._id,
 					},
 				});
-			} else {
-				res.status(401).json({
-					message: 'Authentication Failed',
-					data: { message: 'Wrong Password' }, // TODO Remove message from data in response
-				});
 			}
-		} else {
-			res.status(401).json({
+
+			return res.status(code.UNAUTHORIZED).json({
 				message: 'Authentication Failed',
-				data: { message: 'Invalid Username' }, // TODO Remove message from data in response
 			});
 		}
-	} catch (error) {
-		res.status(500).json({
-			message: 'Internal Server Error',
-			data: error,
+
+		return res.status(code.UNAUTHORIZED).json({
+			message: 'Authentication Failed',
 		});
+	} catch (err) {
+		return error.internalServerError(res, err);
 	}
 };
 
-// Update the user email
-export const updateEmail = async (
-	req: express.Request,
-	res: express.Response
-) => {
-	if (!req.body.newValue || !req.body.username) {
-		res.status(400).json({
-			message: 'Bad Request',
-			data: 'Failed to get email from request body.',
-		});
-	} else {
-		try {
-			const username = req.body.username;
-			const email = req.body.newValue;
-			const result = await User.updateOne(
-				{ username: username },
-				{ email: email }
-			);
-			response(res, result);
-		} catch (error) {
-			res.status(500).json({
-				message: 'Internal Server Error',
-				data: { message: 'Unknown Error Occured' },
-			});
-		}
-	}
-};
+/**
+ *
+ * @param req express.Request
+ * @param res express.Response
+ * @description Update user email
+ */
+export const updateEmail = async (req: Request, res: Response) => {
+	const id = req.body.userId; // From JWT Token
+	const email = req.body.newEmail; // From client
 
-// Update the user password
-export const updatePassword = async (
-	req: express.Request,
-	res: express.Response
-) => {
-	if (!req.body.newValue || !req.body.username) {
-		res.status(400).json({
-			message: 'Bad Request',
-			data: 'Failed to get password from request body.',
-		});
-	} else {
-		try {
-			const password = await encrypt(req.body.newValue);
-			const username = req.body.username;
-			const result = await User.updateOne(
-				{ username: username },
-				{ password: password }
-			);
-			response(res, result);
-		} catch (error) {
-			res.status(500).json({
-				message: 'Internal Server Error',
-				data: error,
-			});
-		}
+	if (!email || !id) {
+		return error.badRequestError(res);
 	}
-};
 
-// Update the user username
-export const updateUsername = async (
-	req: express.Request,
-	res: express.Response
-) => {
-	if (!req.body.newValue || !req.body.username) {
-		res.status(400).json({
-			message: 'Bad Request',
-			data: 'Failed to get username from request body.',
-		});
-	} else {
-		try {
-			const newUsername: string = req.body.newValue;
-			const username: string = req.body.username;
-			const result = await User.updateOne(
-				{ username: username },
-				{ username: newUsername }
-			);
-
-			response(res, result);
-		} catch (error) {
-			res.status(500).json({
-				message: 'Internal Server Error',
-				data: error,
-			});
-		}
-	}
-};
-
-// Email for frontend validation to avoid duplicate emails
-export const checkEmail = async (
-	req: express.Request,
-	res: express.Response
-) => {
-	if (!req.body.email) {
-		res.status(400).json({
-			message: 'Bad Request',
-			data: 'Failed to get email from request body.',
-		});
-	}
 	try {
-		const result: mongoose.Document | null = await User.findOne({
-			email: req.body.email,
+		const document = await User.findByIdAndUpdate(id, { email: email });
+
+		if (!document) {
+			return error.notFoundError(res);
+		}
+
+		return res.status(code.OK).json({
+			message: 'Email Updated',
+			data: {
+				previous: {
+					...document.toJSON(),
+					password: '********',
+				},
+				updated: {
+					...(await User.findById(id))?.toJSON(),
+					password: '********',
+				},
+			},
 		});
-		// if result is null means that the email isn't present in DB
-		if (result) {
-			res.status(200).json({
+	} catch (err) {
+		return error.internalServerError(res, err);
+	}
+};
+
+/**
+ *
+ * @param req express.Request
+ * @param res express.Response
+ * @description Update password
+ */
+export const updatePassword = async (req: Request, res: Response) => {
+	const id = req.body.userId; // From JWT Token
+	const password = req.body.newPassword; // From client
+
+	if (!password || !id) {
+		return error.badRequestError(res);
+	}
+
+	try {
+		const hash = await bcrypt.hash(password, ENCRYPTION_ROUNDS);
+		const document = await User.findByIdAndUpdate(id, {
+			password: hash,
+		});
+
+		if (!document) {
+			return error.notFoundError(res);
+		}
+
+		return res.status(code.OK).json({
+			message: 'Password Updated',
+			data: {
+				previous: {
+					...document.toJSON(),
+					password: '********',
+				},
+				updated: {
+					...(await User.findById(id))?.toJSON(),
+					password: '********',
+				},
+			},
+		});
+	} catch (err) {
+		return error.internalServerError(res, err);
+	}
+};
+
+/**
+ *
+ * @param req express.Request
+ * @param res express.Response
+ * @description Update user date of birth
+ */
+export const updateDOB = async (req: Request, res: Response) => {
+	const id = req.body.userId; // From JWT Token
+	const dob = req.body.newDOB; // From client
+
+	if (!id || !dob) {
+		return error.badRequestError(res);
+	}
+
+	try {
+		const age = { ...calculateAge(dob) };
+		const document = await User.findByIdAndUpdate(id, {
+			dob: dob,
+			age: age,
+		});
+
+		if (!document) {
+			return error.notFoundError(res);
+		}
+
+		return res.status(code.OK).json({
+			message: 'DOB Updated',
+			data: {
+				previous: {
+					...document.toJSON(),
+					password: '********',
+				},
+				updated: {
+					...(await User.findById(id))?.toJSON(),
+					password: '********',
+				},
+			},
+		});
+	} catch (err) {
+		return error.internalServerError(res, err);
+	}
+};
+
+/**
+ *
+ * @param req express.Request
+ * @param res express.Response
+ * @description To update username
+ */
+export const updateUsername = async (req: Request, res: Response) => {
+	const id = req.body.userId; // From JWT Token
+	const username = req.body.newUsername; // From client
+
+	if (!id || !username) {
+		return error.badRequestError(res);
+	}
+
+	try {
+		const document = await User.findByIdAndUpdate(id, {
+			username: username,
+		});
+
+		if (!document) {
+			return error.notFoundError(res);
+		}
+
+		return res.status(code.OK).json({
+			message: 'Username Updated',
+			data: {
+				previous: {
+					...document.toJSON(),
+					password: '********',
+				},
+				updated: {
+					...(await User.findById(id))?.toJSON(),
+					password: '********',
+				},
+			},
+		});
+	} catch (err) {
+		error.internalServerError(res, err);
+	}
+};
+
+/**
+ *
+ * @param req express.Request
+ * @param res express.Response
+ * @description To remove user account and Authentication is required
+ */
+export const remove = async (req: Request, res: Response) => {
+	/**
+	 * userId from extracted from JWT Token
+	 */
+	const id = req.body.userId;
+	if (!id) {
+		return error.badRequestError(res);
+	}
+
+	try {
+		const document = await User.findByIdAndDelete(id);
+
+		if (!document) {
+			return error.notFoundError(res);
+		}
+
+		return res.status(code.OK).json({
+			message: 'Deleted',
+			data: {
+				...document.toJSON(),
+				password: '********',
+			},
+		});
+	} catch (err) {
+		return error.internalServerError(res, err);
+	}
+};
+
+/**
+ *
+ * @param req express.Request
+ * @param res express.Response
+ * @description update all user details at once
+ */
+export const updateProfile = async (req: Request, res: Response) => {
+	const id = req.body.UserId;
+	const username = req.body.newUsername;
+	const email = req.body.newEmail;
+	const dob = req.body.newDOB;
+
+	if (!username || !email || !dob || !id) {
+		return error.badRequestError(res);
+	}
+
+	try {
+		const oldDocument = await User.findByIdAndUpdate(id, {
+			username: username,
+			email: email,
+			dob: dob,
+		});
+
+		const newDocument = await User.findById(id);
+
+		if (!oldDocument || !newDocument) {
+			return error.notFoundError(res);
+		}
+
+		return res.status(code.OK).json({
+			message: 'Profile Updated',
+			data: {
+				previous: oldDocument,
+				updated: newDocument,
+			},
+		});
+	} catch (err) {
+		return error.internalServerError(res, err);
+	}
+};
+
+/**
+ *
+ * @param req express.Request
+ * @param res express.Response
+ * @description Email for frontend validation to avoid duplicate emails
+ */
+export const checkEmail = async (req: Request, res: Response) => {
+	const email = req.body.email;
+
+	if (!email) {
+		return error.badRequestError(res);
+	}
+
+	try {
+		const document = await User.findOne({ email: email });
+		// if document is null means that the email isn't present in DB
+		if (document) {
+			return res.status(code.OK).json({
 				message: 'Email Already Exists',
 				data: { isValid: false },
 			});
-		} else {
-			res.status(200).json({
-				message: 'Valid Email',
-				data: { isValid: true },
-			});
 		}
-	} catch (error) {
-		res.status(500).json({
-			message: 'Internal Server Error',
-			data: error,
+
+		return res.status(code.OK).json({
+			message: 'Valid Email',
+			data: { isValid: true },
 		});
+	} catch (err) {
+		error.internalServerError(res, err);
 	}
 };
 
-// Username for frontend validation to avoid duplicate usernames
-export const checkUsername = async (
-	req: express.Request,
-	res: express.Response
-) => {
-	if (!req.body.username) {
-		res.status(400).json({
-			message: 'Bad Request',
-			data: 'Failed to get username from request body.',
-		});
+/**
+ *
+ * @param req express.Request
+ * @param res express.Response
+ * @description Username for frontend validation to avoid duplicate usernames
+ */
+export const checkUsername = async (req: Request, res: Response) => {
+	const username = req.body.username;
+
+	if (!username) {
+		return error.badRequestError(res);
 	}
 
 	try {
-		const result: mongoose.Document | null = await User.findOne({
-			username: req.body.username,
-		});
-		// if result is null means that the email isn't present in DB
-		if (result) {
-			res.status(200).json({
+		const document = await User.findOne({ username: username });
+		// if document is null means that the username isn't present in DB
+		if (document) {
+			return res.status(200).json({
 				message: 'Username Already Exists',
 				data: { isValid: false },
 			});
-		} else {
-			res.status(200).json({
-				message: 'Valid Email',
-				data: { isValid: true },
-			});
 		}
-	} catch (error) {
-		res.status(500).json({
-			message: 'Internal Server Error',
-			data: error,
-		});
-	}
-};
 
-// Utility functions
-const response = (res: express.Response, result: UpdateOneResult) => {
-	if (result.nModified) {
-		res.status(200).json({
-			message: 'Value Successfully Updated',
-			data: { status: 1 },
+		return res.status(200).json({
+			message: 'Valid Username',
+			data: { isValid: true },
 		});
-	} else if (result.n) {
-		res.status(200).json({
-			message: "Value wasn't updated ",
-			data: { status: -1 },
-		});
-	} else {
-		res.status(401).json({
-			message: 'Not Authorized to Update',
-			data: { status: 0 },
-		});
+	} catch (err) {
+		return error.internalServerError(res, err);
 	}
-};
-
-const encrypt = (password: string) => {
-	return bcrypt.hash(password, 10);
 };
