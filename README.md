@@ -44,7 +44,7 @@
 1. Signup
    * End point
     ```
-    /api/auth/signup 
+    /api/auth/signup [POST]
     ```
     * Request
     ```
@@ -84,7 +84,7 @@
 2. Signin
     * End point
     ```
-    /api/auth/signin
+    /api/auth/signin [POST]
     ```
     * Request
     ```
@@ -111,7 +111,7 @@
     > Here XXXXXX = username, password, email, dob
     * End point
     ```
-    /api/auth/update-XXXXXX
+    /api/auth/update-XXXXXX [POST]
     ```
     * Request 
     ```
@@ -133,7 +133,7 @@
 4. Update Profile
    * End point
     ```
-    /api/auth/update-profile
+    /api/auth/update-profile [POST]
     ```
     * Request
     ```
@@ -157,7 +157,7 @@
 5. Remove Account
     * End point 
     ```
-    /api/auth/remove
+    /api/auth/remove [DELETE]
     ```
     * Request 
     ```
@@ -175,7 +175,7 @@
     > Here XXXXXX = email, username
     * End point 
     ```
-    /api/auth/check-XXXXXX
+    /api/auth/check-XXXXXX [POST]
     ```
     * Request 
     ```
@@ -198,13 +198,13 @@
     * End point 
     ```
     # question
-    /api/info/question/create
+    /api/info/question/create [POST]
 
     # answer
-    /api/info/answer/create 
+    /api/info/answer/create [POST]
     
     # comment
-    /api/info/comment/create 
+    /api/info/comment/create [POST]
 
     ```
     * Request 
@@ -240,13 +240,13 @@
    * End point 
     ```
     # question
-    /api/info/question/get-all
+    /api/info/question/get-all [GET]
 
     # answer (question Id)
-    /api/info/answer/get-all/:id 
+    /api/info/answer/get-all/:id [GET]
     
     # comment (question or answer id)
-    /api/info/comment/get-all/:id
+    /api/info/comment/get-all/:id [GET]
 
     ```
     * Request 
@@ -269,13 +269,13 @@
     * End point 
     ```
     # question
-    /api/info/question/get-user-all
+    /api/info/question/get-user-all [GET]
 
     # answer
-    /api/info/answer/get-user-all 
+    /api/info/answer/get-user-all [GET]
     
     # comment
-    /api/info/comment/get-user-all 
+    /api/info/comment/get-user-all [GET]
 
     ```
     * Request 
@@ -302,13 +302,13 @@
     * End point 
     ```
     # question
-    /api/info/question/get-one/:id
+    /api/info/question/get-one/:id [GET]
 
     # answer
-    /api/info/answer/get-one/:id 
+    /api/info/answer/get-one/:id  [GET]
     
     # comment
-    /api/info/comment/get-one/:id 
+    /api/info/comment/get-one/:id [GET]
 
     ```
     * Request 
@@ -333,7 +333,7 @@
     * End point 
     ```
     # question, answer, comment
-    /api/info/XXXXXX/update
+    /api/info/XXXXXX/update [PATCH]
     
     ```
     * Request 
@@ -364,7 +364,7 @@
     * End point 
     ```
     # question, answer, comment
-    /api/info/XXXXXX/remove
+    /api/info/XXXXXX/remove [DELETE]
 
     ```
     * Request 
@@ -391,7 +391,7 @@
     > Here YYYYYY = upvote, downvote
     * End point 
     ```
-    /api/XXXXXX/YYYYYY
+    /api/XXXXXX/YYYYYY [POST]
     ```
     * Request 
     ```
