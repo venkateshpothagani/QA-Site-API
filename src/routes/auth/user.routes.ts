@@ -30,3 +30,9 @@ routes.post('/update-dob', checkAuth, user.updateDOB);
 
 // Deletes the user when user is authenticated
 routes.delete('/remove', checkAuth, user.remove);
+
+// to send user details
+routes.get('/profile/:username', user.getProfile);
+
+// updates profile
+routes.patch('/update-profile', checkAuth, user.updateProfile);

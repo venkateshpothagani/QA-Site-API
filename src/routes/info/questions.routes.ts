@@ -24,7 +24,7 @@ routes.patch('/update', checkAuth, question.update);
 
 // Delete a Question
 // Authentication Required
-routes.delete('/remove', checkAuth, question.remove);
+routes.delete('/remove/:id', checkAuth, question.remove);
 
 // Adds a upvote
 // Authentication Required

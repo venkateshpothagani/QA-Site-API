@@ -23,7 +23,7 @@ import * as code from '../../utilities/status-code';
  */
 export const create = async (req: Request, res: Response) => {
 	const userId = req.body.userId;
-	const targetId = req.body.targetId;
+	const targetId = req.body.id;
 	const description = req.body.description;
 	const username = req.body.username;
 
@@ -151,7 +151,7 @@ export const getOne = async (req: Request, res: Response) => {
  * req body contains description of new comment
  */
 export const update = async (req: Request, res: Response) => {
-	const id = req.body.featureId;
+	const id = req.body.id;
 	const description = req.body.description;
 
 	if (!id || !description) {
@@ -188,7 +188,7 @@ export const update = async (req: Request, res: Response) => {
  * req contains id parameter (comment id)
  */
 export const remove = async (req: Request, res: Response) => {
-	const id = req.body.featureId;
+	const id = req.params.id;
 
 	if (!id) {
 		return error.badRequestError(res);

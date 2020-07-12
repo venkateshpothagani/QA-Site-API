@@ -142,7 +142,7 @@ export const getOne = async (req: Request, res: Response) => {
  * 
  */
 export const update = async (req: Request, res: Response) => {
-	const id = req.body.featureId;
+	const id = req.body.id;
 	const newTitle = req.body.title;
 	const newDescription = req.body.description;
 
@@ -182,7 +182,7 @@ export const update = async (req: Request, res: Response) => {
  * req contains id parameter (question id)
  */
 export const remove = async (req: Request, res: Response) => {
-	const id = req.body.featureId;
+	const id = req.params.id;
 
 	if (!id) {
 		return error.badRequestError(res);

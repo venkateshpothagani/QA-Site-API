@@ -24,7 +24,7 @@ routes.patch('/update', checkAuth, comment.update);
 
 // Delete comment
 // Authentication Required
-routes.delete('/remove', checkAuth, comment.remove);
+routes.delete('/remove/:id', checkAuth, comment.remove);
 // Adds a upvote
 // Authentication Required
 routes.post('/upvote', checkAuth, comment.upvote);

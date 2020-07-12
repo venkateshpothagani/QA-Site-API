@@ -23,7 +23,7 @@ routes.patch('/update', checkAuth, answer.update);
 
 // Delete a answer
 // Authentication Required
-routes.delete('/remove', checkAuth, answer.remove);
+routes.delete('/remove/:id', checkAuth, answer.remove);
 
 // Adds a upvote
 // Authentication Required

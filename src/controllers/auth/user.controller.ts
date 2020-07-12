@@ -5,6 +5,7 @@ import { User } from '../../schemas/auth/user.schema';
 import * as error from '../../utilities/response';
 import * as code from '../../utilities/status-code';
 import { calculateAge } from '../../utilities/age-calculator';
+import { userActivity } from '../../utilities/profile';
 
 const ENCRYPTION_ROUNDS: number = 10;
 
@@ -316,7 +317,7 @@ export const remove = async (req: Request, res: Response) => {
  * @description update all user details at once
  */
 export const updateProfile = async (req: Request, res: Response) => {
-	const id = req.body.UserId;
+	const id = req.body.userId;
 	const username = req.body.newUsername;
 	const email = req.body.newEmail;
 	const dob = req.body.newDOB;
@@ -408,6 +409,46 @@ export const checkUsername = async (req: Request, res: Response) => {
 		return res.status(200).json({
 			message: 'Valid Username',
 			data: { isValid: true },
+		});
+	} catch (err) {
+		return error.internalServerError(res, err);
+	}
+};
+
+/**
+ *
+ * @param req express.Request
+ * @param res express.Response
+ * @description
+ * Send all details of user
+ */
+export const getProfile = async (req: Request, res: Response) => {
+	const username = req.params.username;
+
+	if (!username) {
+		return error.badRequestError(res);
+	}
+
+	try {
+		const document = await User.findOne({
+			username: username,
+		});
+
+		if (!document) {
+			return error.notFoundError(res);
+		}
+
+		const result = {
+			username: document.toJSON().username,
+			email: document.toJSON().email,
+			age: document.toJSON().age,
+			dob: document.toJSON().dob,
+			activity: await userActivity(username),
+		};
+
+		return res.status(code.OK).json({
+			message: 'Profile Fetched',
+			data: result,
 		});
 	} catch (err) {
 		return error.internalServerError(res, err);

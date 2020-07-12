@@ -20,7 +20,7 @@ import * as code from '../../utilities/status-code';
  */
 export const create = async (req: Request, res: Response) => {
 	const userId = req.body.userId;
-	const questionId = req.body.questionId;
+	const questionId = req.body.id;
 	const username = req.body.username;
 	const description = req.body.description;
 
@@ -149,7 +149,7 @@ export const getOne = async (req: Request, res: Response) => {
  * req body contains description
  */
 export const update = async (req: Request, res: Response) => {
-	const id = req.body.featureId;
+	const id = req.body.id;
 	const newDescription = req.body.description;
 
 	if (!id || !newDescription) {
@@ -187,7 +187,7 @@ export const update = async (req: Request, res: Response) => {
  * req contains id parameter (answer id)
  */
 export const remove = async (req: Request, res: Response) => {
-	const id = req.body.featureId;
+	const id = req.params.id;
 
 	if (!id) {
 		error.badRequestError(res);
